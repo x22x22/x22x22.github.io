@@ -80,6 +80,14 @@
             margin: 20px 0;
             border-radius: 0 5px 5px 0;
         }
+        .update-note {
+            background: #d4edda;
+            padding: 15px;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #28a745;
+        }
         @media (max-width: 1024px) {
             .model-comparison {
                 grid-template-columns: 1fr;
@@ -106,7 +114,7 @@
                 <li><strong>Short-context models</strong> (e.g., multilingual-e5-large with 512 token limit) can be extended to handle 1K+ tokens effectively</li>
                 <li><strong>Long-context models</strong> (e.g., jina-embeddings-v3) achieve similar performance with smaller max_model_len + chunking as with native long context, but with better efficiency</li>
                 <li><strong>Performance remains reasonable</strong> even when exceeding native model capacity, provided the excess isn't too significant</li>
-                <li><strong>Surprising discovery:</strong> Established models like multilingual-e5-large with chunked processing can outperform newer long-context models</li>
+                <li><strong>Implementation matters:</strong> Proper model configuration is crucial for accurate performance evaluation</li>
             </ul>
         </div>
 
@@ -114,14 +122,18 @@
             <strong>Note:</strong> "Native" refers to the main branch (unmodified), while "Extended" refers to the feat/support-long-text-embedding branch with automatic chunked processing.
         </div>
 
+        <div class="update-note">
+            <strong>📊 Updated Results:</strong> The gte-Qwen2-1.5B-instruct results have been updated after fixing implementation issues (is_causal fix + VLLM_ATTENTION_BACKEND=XFORMERS), showing significantly improved performance compared to initial tests.
+        </div>
+
         <h2>📊 Performance Analysis by Model</h2>
         
         <div class="chart-container">
-            <h3>Model Performance Comparison: Why Chunked Processing Matters</h3>
+            <h3>Model Performance Comparison: Implementation-Corrected Results</h3>
             <div class="chart-wrapper">
                 <canvas id="comparisonChart"></canvas>
             </div>
-            <p><em>Comparison of multilingual-e5-large (with chunked processing) vs gte-Qwen2-1.5B-instruct (native 32K support). Despite having native long-context support, the newer model shows consistently lower performance across all context lengths.</em></p>
+            <p><em>Updated comparison showing multilingual-e5-large (with chunked processing) vs gte-Qwen2-1.5B-instruct (corrected implementation with native 32K support). The corrected implementation shows competitive performance, especially in shorter context ranges.</em></p>
         </div>
         
         <div class="chart-container">
@@ -141,9 +153,15 @@
         </div>
 
         <div class="insight-box">
-            <h3>💡 Production Reality: Why Established Models Remain Competitive</h3>
-            <p>The benchmark results reveal a counterintuitive finding that aligns with real-world production experiences. Despite gte-Qwen2-1.5B-instruct having native 32K context support, multilingual-e5-large with chunked processing consistently outperforms it across all context lengths.</p>
-            <p>This explains why many production applications that have achieved high RAG recall rates with established models like multilingual-e5-large show little willingness to switch to newer embedding models. The risk of degraded performance often outweighs the theoretical benefits of longer native context support.</p>
+            <h3>💡 Implementation Lessons: Configuration Impact on Performance</h3>
+            <p>The dramatic improvement in gte-Qwen2-1.5B-instruct performance after implementation fixes highlights a critical lesson: proper model configuration is essential for accurate benchmarking. The corrected results show that modern long-context models can indeed be competitive, especially in their optimal range.</p>
+            <p>This emphasizes the importance of:</p>
+            <ul>
+                <li>Following model-specific implementation guidelines</li>
+                <li>Using appropriate attention backends and configurations</li>
+                <li>Validating results against known model capabilities</li>
+                <li>Community feedback for identifying implementation issues</li>
+            </ul>
         </div>
 
         <div class="model-comparison">
@@ -153,7 +171,7 @@
                 <p><strong>Native limit:</strong> 512 tokens</p>
                 <p><strong>Extended capability:</strong> 32K+ tokens</p>
                 <p><strong>Sweet spot:</strong> Up to 2K tokens maintain 50%+ performance</p>
-                <p><strong>Advantage:</strong> Proven performance in production</p>
+                <p><strong>Advantage:</strong> Proven performance, reliable chunking</p>
             </div>
             <div class="model-card">
                 <h3>🚀 Jina-Embeddings-V3</h3>
@@ -164,39 +182,40 @@
                 <p><strong>Advantage:</strong> Efficient processing with smaller chunks</p>
             </div>
             <div class="model-card">
-                <h3>🔄 GTE-Qwen2-1.5B-Instruct</h3>
+                <h3>🔄 GTE-Qwen2-1.5B-Instruct (Corrected)</h3>
                 <p><strong>Architecture:</strong> Decoder-based</p>
                 <p><strong>Native limit:</strong> 32K tokens</p>
                 <p><strong>Extended capability:</strong> Native long context</p>
-                <p><strong>Performance:</strong> Lower than chunked BERT models</p>
-                <p><strong>Reality:</strong> Native ≠ Better performance</p>
+                <p><strong>Performance:</strong> Competitive when properly configured</p>
+                <p><strong>Sweet spot:</strong> Excellent up to 4K tokens</p>
             </div>
         </div>
 
         <h2>🔍 Implementation Insights</h2>
-        <p>The automatic chunked processing method, similar to the approach used by jina-reranker-v2, addresses the Performance-Context-Window (PCW) challenge identified in the LongEmbed paper. While PCW was shown to have limitations with absolute position embedding models, our results demonstrate practical value in real-world scenarios.</p>
+        <p>The automatic chunked processing method, similar to the approach used by jina-reranker-v2, addresses the Performance-Context-Window (PCW) challenge identified in the LongEmbed paper. Our updated results show that both approaches have their merits:</p>
         
         <ul>
-            <li><strong>Memory efficiency:</strong> Avoids CUDA memory errors with very long contexts</li>
+            <li><strong>Memory efficiency:</strong> Chunked processing avoids CUDA memory errors with very long contexts</li>
             <li><strong>Consistent performance:</strong> Maintains quality within native token limits</li>
             <li><strong>Flexible scaling:</strong> Handles documents of arbitrary length</li>
-            <li><strong>Production-proven:</strong> Works with established, reliable models</li>
+            <li><strong>Model compatibility:</strong> Works across different embedding architectures</li>
+            <li><strong>Implementation sensitivity:</strong> Proper configuration is crucial for optimal performance</li>
         </ul>
 
         <div class="key-findings">
-            <h3>🎯 Why This Approach Matters for Production</h3>
-            <p>The performance comparison reveals why many enterprises stick with established embedding models:</p>
+            <h3>🎯 Practical Recommendations</h3>
+            <p>Based on the corrected benchmark results, here are our recommendations:</p>
             <ul>
-                <li><strong>Risk mitigation:</strong> Proven models with known performance characteristics</li>
-                <li><strong>Pipeline optimization:</strong> Years of fine-tuning RAG pipelines around specific models</li>
-                <li><strong>Performance reality:</strong> Newer doesn't always mean better in embedding tasks</li>
-                <li><strong>Cost-effectiveness:</strong> Extending existing models vs rebuilding entire pipelines</li>
+                <li><strong>For established pipelines:</strong> Chunked processing extends proven models effectively</li>
+                <li><strong>For new implementations:</strong> Modern long-context models offer competitive native performance when properly configured</li>
+                <li><strong>For optimal performance:</strong> Context ranges under 2-4K tokens work best across all models</li>
+                <li><strong>For implementation:</strong> Always validate model-specific configuration requirements</li>
             </ul>
         </div>
     </div>
 
     <script>
-        // Model Comparison Chart
+        // Model Comparison Chart - Updated with corrected GTE-Qwen2 data
         const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
         new Chart(comparisonCtx, {
             type: 'line',
@@ -219,23 +238,21 @@
                     fill: false,
                     borderWidth: 3
                 }, {
-                    label: 'GTE-Qwen2 Needle (Native 32K)',
-                    data: [0.44, 0.44, 0.3, 0.5, 0.54, 0.32, 0.4, 0.26],
-                    borderColor: '#e17055',
-                    backgroundColor: 'rgba(225, 112, 85, 0.1)',
+                    label: 'GTE-Qwen2 Needle (Corrected)',
+                    data: [0.86, 0.92, 0.76, 0.62, 0.64, 0.42, 0.18, 0.08],
+                    borderColor: '#00b894',
+                    backgroundColor: 'rgba(0, 184, 148, 0.1)',
                     tension: 0.1,
                     fill: false,
-                    borderDash: [8, 4],
-                    borderWidth: 2
+                    borderWidth: 3
                 }, {
-                    label: 'GTE-Qwen2 Passkey (Native 32K)',
-                    data: [0.34, 0.26, 0.38, 0.16, 0.22, 0.12, 0.22, 0.04],
-                    borderColor: '#d63031',
-                    backgroundColor: 'rgba(214, 48, 49, 0.1)',
+                    label: 'GTE-Qwen2 Passkey (Corrected)',
+                    data: [1.0, 0.98, 1.0, 1.0, 1.0, 0.8, 0.36, 0.16],
+                    borderColor: '#00a085',
+                    backgroundColor: 'rgba(0, 160, 133, 0.1)',
                     tension: 0.1,
                     fill: false,
-                    borderDash: [8, 4],
-                    borderWidth: 2
+                    borderWidth: 3
                 }]
             },
             options: {
@@ -244,7 +261,7 @@
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Chunked Processing vs Native Long Context: Performance Reality'
+                        text: 'Chunked Processing vs Native Long Context: Corrected Implementation Results'
                     },
                     legend: {
                         position: 'top'
