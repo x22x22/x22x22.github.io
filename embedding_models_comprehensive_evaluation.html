@@ -201,7 +201,7 @@
             <div class="chart-wrapper">
                 <canvas id="bgeNeedleChart"></canvas>
             </div>
-            <p><em>Native vs Chunked processing comparison with CLS and MEAN pooling for needle retrieval.</em></p>
+            <p><em>Native vs Chunked processing comparison with CLS pooling for needle retrieval.</em></p>
         </div>
 
         <div class="chart-container">
@@ -209,7 +209,7 @@
             <div class="chart-wrapper">
                 <canvas id="bgePasskeyChart"></canvas>
             </div>
-            <p><em>Native vs Chunked processing comparison with CLS and MEAN pooling for passkey retrieval.</em></p>
+            <p><em>Native vs Chunked processing comparison with CLS pooling for passkey retrieval.</em></p>
         </div>
 
         <!-- E5-Base-4K Charts -->
@@ -622,13 +622,6 @@
                     backgroundColor: colors.color2 + '20',
                     borderWidth: 3,
                     tension: 0.1
-                }, {
-                    label: 'Chunked MEAN',
-                    data: [0.72, 0.44, 0.38, 0.32, 0.04],
-                    borderColor: colors.color3,
-                    backgroundColor: colors.color3 + '20',
-                    borderWidth: 3,
-                    tension: 0.1
                 }]
             },
             options: chartConfig
@@ -651,13 +644,6 @@
                     data: [1.0, 0.62, 0.18, 0.14, 0.04],
                     borderColor: colors.color2,
                     backgroundColor: colors.color2 + '20',
-                    borderWidth: 3,
-                    tension: 0.1
-                }, {
-                    label: 'Chunked MEAN',
-                    data: [0.94, 0.28, 0.24, 0.02, 0.02],
-                    borderColor: colors.color3,
-                    backgroundColor: colors.color3 + '20',
                     borderWidth: 3,
                     tension: 0.1
                 }]
