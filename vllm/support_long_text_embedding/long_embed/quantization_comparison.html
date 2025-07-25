@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>向量模型量化性能对比测试结果</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .summary {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 2rem 0;
+        }
+        
+        .model-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .model-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .comparison-result {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .comparison-result.better {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .comparison-result.worse {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .comparison-result.similar {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .score {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .control-group {
+            margin: 1rem 0;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .control-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .detail-results {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 1rem;
+            border-left: 4px solid #ffc107;
+            margin: 1rem 0;
+        }
+        
+        .conclusion {
+            background: white;
+            color: #333;
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #6f42c1;
+        }
+        
+        .conclusion h3 {
+            color: #6f42c1;
+            margin-top: 0;
+        }
+        
+        .language-switcher {
+            position: fixed;
+            top: 20px;
+            right: max(20px, calc((100vw - 1400px) / 2 + 20px));
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        @media (max-width: 1440px) {
+            .language-switcher {
+                right: 20px;
+            }
+        }
+        
+        .language-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .language-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .language-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .performance-impact {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .impact-none {
+            background-color: #c8f7c5;
+            color: #0f5132;
+        }
+        
+        .impact-minimal {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .impact-moderate {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .impact-significant {
+            background-color: #ffeaa7;
+            color: #6c5500;
+        }
+        
+        .impact-severe {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+    </style>
+  </head>
+<body>
+    <div class="language-switcher">
+        <button class="language-btn active" onclick="switchLanguage('en')">EN</button>
+        <button class="language-btn" onclick="switchLanguage('zh')">中文</button>
+    </div>
+    
+    <div class="header">
+        <h1 data-i18n="page.title">向量模型量化性能对比测试结果</h1>
+        <p data-i18n="page.subtitle">评估不同量化技术对向量嵌入模型性能的影响</p>
+    </div>
+
+    <div style="background: #f8f9fa; border-left: 4px solid #667eea; padding: 1rem; margin: 1.5rem 0; border-radius: 6px;">
+        <h4 style="margin-top: 0; color: #667eea; display: flex; align-items: center;">
+            📚 <span style="margin-left: 0.5rem;" data-i18n="dataset.title">数据集与评估框架</span>
+        </h4>
+        <p style="margin-bottom: 0.5rem;">
+            <strong data-i18n="dataset.source.label">数据集来源：</strong> 
+            <span data-i18n="dataset.source.desc">基于</span> <a href="https://huggingface.co/datasets/dwzhu/LongEmbed" target="_blank" style="color: #667eea;">LongEmbed</a> <span data-i18n="dataset.source.desc2">数据集进行长文本向量嵌入性能评估</span>
+        </p>
+        <p style="margin-bottom: 0.5rem;">
+            <strong data-i18n="evaluation.script.label">评估脚本：</strong> 
+            <span data-i18n="evaluation.script.desc">基于原始</span> <a href="https://github.com/dwzhu-pku/LongEmbed" target="_blank" style="color: #667eea;">LongEmbed</a> <span data-i18n="evaluation.script.desc2">框架进行调整，支持OpenAI兼容接口。</span> 
+            <a href="https://github.com/x22x22/LongEmbed/tree/feature/add-openai-embedding-support" target="_blank" style="color: #667eea;" data-i18n="evaluation.script.link">查看调整后的评估脚本</a>
+        </p>
+                    <p style="margin-bottom: 0;">
+                <strong data-i18n="model.format.label">模型格式：</strong> 
+                <span data-i18n="model.format.desc">包含原生HuggingFace格式(vLLM运行)和GGUF量化格式(ollama运行)两种类型，提供完整的模型性能基准对比</span>
+            </p>
+    </div>
+
+    <div class="summary">
+        <h2 data-i18n="summary.title">📊 量化性能对比汇总</h2>
+        <p data-i18n="summary.description">本研究对比了多个主流向量嵌入模型在不同量化精度下的性能表现，涵盖BGE-M3、Qwen3-Embedding和Multilingual-E5-Large三大系列模型。</p>
+        
+        <div class="highlight">
+            <strong data-i18n="summary.metrics.label">评估指标：</strong> <span data-i18n="summary.metrics.description">使用 ndcg_at_10 指标衡量模型性能，分别在 LEMBNeedleRetrieval 和 LEMBPasskeyRetrieval 任务上进行测试。</span>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 1.5rem; border-radius: 10px; margin: 1rem 0;">
+                            <h4 style="margin-top: 0; display: flex; align-items: center;">
+                    🎯 <span style="margin-left: 0.5rem;" data-i18n="highlight.title">关键发现：技术栈组合对性能的真实影响</span>
+                </h4>
+                <p style="margin-bottom: 1rem;">
+                    <strong data-i18n="highlight.finding1">⚠️ 重大发现 - GGUF技术栈vs HF+vLLM技术栈性能差异：</strong><span data-i18n="highlight.finding1.desc">GGUF格式+Ollama相对于HF格式+vLLM组合在中长文本场景下出现显著性能下滑</span>
+                    <br>• <strong data-i18n="highlight.range.short">短文本影响:</strong> 基本无损，Multilingual-E5-Large甚至提升10.1%
+                    <br>• <strong data-i18n="highlight.range.medium">中等长度文本损失:</strong> Multilingual-E5-Large下降61.2%，Qwen3-4B微幅下降0.9%，Qwen3-0.6B轻微提升3.3%
+                    <br>• <strong data-i18n="highlight.range.long">长文本重大损失:</strong> Multilingual-E5-Large下降90.2%，Qwen3-0.6B下降51.4%，Qwen3-4B下降64.5%
+                    <br>• <strong style="color: #d63384;">关键警告:</strong> GGUF技术栈在长文本检索场景下存在显著性能劣势
+                    <br><br><strong data-i18n="highlight.finding2">2. GGUF内部量化技术相对稳定：</strong><span data-i18n="highlight.finding2.desc">在GGUF格式内部的量化操作影响可控</span>
+                    <br>• <strong>BGE-M3量化链路:</strong> FP16→Q8_0完全无损，Q8_0→Q4_K_M在短中等长度文本甚至提升性能
+                    <br>• <strong>Qwen3-0.6B量化:</strong> F16→Q8_0影响轻微(最大-4.8%)，Q8_0→Q4_K_M稳定性良好
+                    <br>• <strong>Qwen3-4B量化:</strong> F16→Q8_0影响极小(最大-2.2%)，在长文本上保持稳定
+                    <br>• <strong>量化优势:</strong> GGUF内部量化不会额外恶化长文本性能
+                    <br><br><strong data-i18n="highlight.finding3">3. 模型架构差异化表现明显：</strong><span data-i18n="highlight.finding3.desc">不同模型在两种技术栈间的性能差异存在显著区别</span>
+                    <br>• <strong>技术栈适应性排序:</strong> Qwen3-4B(中等长度文本) > Qwen3-0.6B > Multilingual-E5-Large
+                    <br>• <strong>Qwen3系列优势:</strong> 在中等长度文本场景下GGUF技术栈性能损失相对可控
+                    <br>• <strong>Multilingual-E5-Large劣势:</strong> 在GGUF技术栈下长文本损失严重，但短文本反而提升
+                    <br>• <strong>BGE-M3纯GGUF:</strong> 未提供HF原生版本，无法评估技术栈差异
+                    <br><br><strong data-i18n="highlight.finding4">4. 长文本处理是关键技术栈选择因素：</strong><span data-i18n="highlight.finding4.desc">GGUF技术栈在长文本检索场景下存在系统性劣势</span>
+                    <br>• <strong>长文本重灾区:</strong> 所有模型在GGUF技术栈下8K-32K文本长度均出现50%以上性能下降
+                    <br>• <strong>业务风险评估:</strong> 长文本检索场景下GGUF技术栈存在不可接受的性能损失
+                    <br>• <strong>技术栈选择:</strong> 长文本应用强烈建议使用HF+vLLM技术栈
+                    <br>• <strong>GGUF适用场景:</strong> 主要适合短中等长度文本应用，长文本场景需谨慎评估
+                </p>
+        </div>
+
+        <div id="modelResults" class="model-grid"></div>
+    </div>
+
+    <div class="conclusion">
+        <h3 data-i18n="conclusion.title">🎯 量化技术实用性分析与建议</h3>
+        
+        <div style="background: rgba(40, 167, 69, 0.1); border: 2px solid #28a745; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
+            <h4 style="color: #28a745; margin-top: 0;" data-i18n="conclusion.breakthrough.title">🌟 核心结论：量化技术已达到工业级标准</h4>
+            <p style="margin-bottom: 0;">
+                <span data-i18n="conclusion.breakthrough.description">完整测试数据证实：<strong>量化技术已达到工业级部署标准</strong>。Multilingual-E5-Large 即使在最激进的Q4_K_M量化下损失也仅3.9%，彻底打破了"量化必然大幅降性能"的误区。这为企业级AI应用的大规模、低成本部署扫清了技术障碍。</span>
+            </p>
+        </div>
+        
+        <h4 data-i18n="conclusion.differences.title">量化技术全景影响评估</h4>
+        <p data-i18n="conclusion.differences.intro">基于完整量化链路测试，不同级别量化的真实影响：</p>
+        <ul>
+            <li><strong data-i18n="conclusion.differences.point1.title">保守量化(F32→F16→Q8_0)：</strong> <span data-i18n="conclusion.differences.point1.desc">所有模型表现优异，Multilingual-E5-Large完全无损，可作为生产首选</span></li>
+            <li><strong data-i18n="conclusion.differences.point2.title">激进量化(Q4_K_M)：</strong> <span data-i18n="conclusion.differences.point2.desc">Multilingual-E5-Large仅损失3.9%树立新标杆，BGE-M3波动较大，Qwen3-4B损失13.3%需要权衡</span></li>
+            <li><strong data-i18n="conclusion.differences.point3.title">长文本场景特殊性：</strong> <span data-i18n="conclusion.differences.point3.desc">所有模型基础性能偏低，但Multilingual-E5-Large在量化方面表现最稳定</span></li>
+        </ul>
+        
+                        <h4 data-i18n="conclusion.effectiveness.title">技术栈选择决策矩阵</h4>
+                <p data-i18n="conclusion.effectiveness.intro">基于格式转换与量化技术的真实影响，建立应用场景导向的技术栈选择标准：</p>
+                <ul>
+                    <li><strong data-i18n="conclusion.effectiveness.point1.title">🎯 长文本应用（8K-32K）- 强制HF原生：</strong> <span data-i18n="conclusion.effectiveness.point1.desc">GGUF格式在长文本场景下存在50%-90%性能损失，不可接受。必须使用HF+vLLM技术栈</span></li>
+                    <li><strong data-i18n="conclusion.effectiveness.point2.title">⚖️ 中等长度文本应用（1K-4K）- 需权衡选择：</strong> <span data-i18n="conclusion.effectiveness.point2.desc">Qwen3系列在GGUF转换中损失可控(0.9%-3.3%)，Multilingual-E5-Large损失较大(61.2%)。建议Qwen3可用GGUF，E5-Large保持HF</span></li>
+                    <li><strong data-i18n="conclusion.effectiveness.point3.title">✅ 短文本应用（256-512）- GGUF友好：</strong> <span data-i18n="conclusion.effectiveness.point3.desc">所有模型在短文本场景下GGUF转换无损甚至提升，可放心使用GGUF+量化技术栈</span></li>
+                    <li><strong data-i18n="conclusion.effectiveness.point4.title">🔧 GGUF内部量化策略优化：</strong> <span data-i18n="conclusion.effectiveness.point4.desc">在确定使用GGUF的场景下，F16→Q8_0→Q4_K_M量化链路影响可控，可根据资源需求选择量化级别</span></li>
+                </ul>
+                
+                <h4 data-i18n="conclusion.recommendation.title">基于应用场景的部署决策指南</h4>
+                <p><strong style="color: #d63384;" data-i18n="conclusion.recommendation.stance">格式选择比量化级别更关键</strong><span data-i18n="conclusion.recommendation.intro">：</span></p>
+                <ol>
+                    <li><strong data-i18n="conclusion.recommendation.point1.title">长文本检索系统（RAG/文档分析）：</strong> <span data-i18n="conclusion.recommendation.point1.desc">强制HF+vLLM，推荐Multilingual-E5-Large FP32或Qwen3-4B BF16，确保长文本检索能力</span></li>
+                    <li><strong data-i18n="conclusion.recommendation.point2.title">混合长度应用（搜索/推荐）：</strong> <span data-i18n="conclusion.recommendation.point2.desc">HF+vLLM优先，如资源受限可考虑Qwen3系列+GGUF F16，避免E5-Large转GGUF</span></li>
+                    <li><strong data-i18n="conclusion.recommendation.point3.title">短文本密集型（分类/匹配）：</strong> <span data-i18n="conclusion.recommendation.point3.desc">GGUF技术栈完全适用，推荐BGE-M3 Q4_K_M或Qwen3-0.6B Q4_K_M，高性价比</span></li>
+                    <li><strong data-i18n="conclusion.recommendation.point4.title">资源极度受限（边缘部署）：</strong> <span data-i18n="conclusion.recommendation.point4.desc">Qwen3-0.6B + Q4_K_M + GGUF，在可接受的性能损失下实现最小资源占用</span></li>
+                    <li><strong data-i18n="conclusion.recommendation.point5.title">性能基准测试与评估：</strong> <span data-i18n="conclusion.recommendation.point5.desc">在选择GGUF方案前，务必在目标文本长度范围内进行充分测试，特别关注长文本性能损失</span></li>
+                </ol>
+        
+        <p><strong data-i18n="conclusion.recommendation.suggestion.title">战略建议：</strong> <span data-i18n="conclusion.recommendation.suggestion.desc">Multilingual-E5-Large + Q4_K_M 的组合重新定义了量化部署的标准。在3.9%的微小性能代价下可实现显存节省，这一突破性结果使得大规模、低成本的向量模型部署成为现实。建议企业优先采用此配置作为标准方案。</span></p>
+    </div>
+
+    <div class="controls">
+        <h3 data-i18n="controls.title">🔍 量化性能对比图表</h3>
+        <p data-i18n="controls.description">选择模型对比不同量化精度下的性能变化：</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+            <div class="control-group">
+                <label for="modelSelect" data-i18n="controls.model.label">模型系列:</label>
+                <select id="modelSelect">
+                    <option value="" data-i18n="controls.model.placeholder">选择模型系列</option>
+                    <option value="multilingual-e5-large">Multilingual-E5-Large</option>
+                    <option value="bge-m3">BGE-M3</option>
+                    <option value="qwen3-0.6b">Qwen3-Embedding-0.6B</option>
+                    <option value="qwen3-4b">Qwen3-Embedding-4B</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="contextRangeSelect" data-i18n="controls.range.label">文本长度范围:</label>
+                <select id="contextRangeSelect">
+                    <option value="short" data-i18n="controls.range.short">短文本 (256-512)</option>
+                    <option value="medium" data-i18n="controls.range.medium">中等长度文本 (1K-4K)</option>
+                    <option value="long" data-i18n="controls.range.long">长文本 (8K-32K)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+            <button onclick="showComparison()" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem;" data-i18n="controls.show.button">
+                显示对比图表
+            </button>
+            <button onclick="clearChart()" style="padding: 0.75rem 1.5rem; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem;" data-i18n="controls.clear.button">
+                清空图表
+            </button>
+        </div>
+        
+        <div id="chartLegend" style="margin-top: 1rem; font-size: 0.9rem; line-height: 1.4;"></div>
+    </div>
+
+    <div id="detailResults" class="detail-results" style="display: block;">
+        <h3 data-i18n="details.title">量化性能对比图表</h3>
+        <div style="margin-bottom: 1rem;">
+            <label data-i18n="chart.task.label">任务:</label>
+            <select id="taskSelect" style="margin-left: 0.5rem; padding: 0.25rem;">
+                <option value="LEMBNeedleRetrieval">LEMBNeedleRetrieval</option>
+                <option value="LEMBPasskeyRetrieval">LEMBPasskeyRetrieval</option>
+            </select>
+        </div>
+        <div style="position: relative; height: 500px;">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Language data for internationalization
+        const i18nData = {
+            en: {
+                'page.title': 'Vector Model Quantization Performance Comparison Results',
+                'page.subtitle': 'Evaluating the impact of different quantization techniques on vector embedding model performance',
+                'dataset.title': 'Dataset & Evaluation Framework',
+                'dataset.source.label': 'Dataset Source:',
+                'dataset.source.desc': 'Based on',
+                'dataset.source.desc2': 'dataset for long-text vector embedding performance evaluation',
+                'evaluation.script.label': 'Evaluation Script:',
+                'evaluation.script.desc': 'Adapted from original',
+                'evaluation.script.desc2': 'framework with OpenAI-compatible interface support.',
+                'evaluation.script.link': 'View adapted evaluation script',
+                'model.format.label': 'Model Format:',
+                'model.format.desc': 'Includes both native HuggingFace format (vLLM runtime) and GGUF quantized format (ollama runtime), providing comprehensive model performance benchmarks',
+                'summary.title': '📊 Quantization Performance Summary',
+                'summary.description': 'This study compares the performance of major vector embedding models under different quantization precisions, covering BGE-M3, Qwen3-Embedding, and Multilingual-E5-Large model families.',
+                'summary.metrics.label': 'Evaluation Metrics:',
+                'summary.metrics.description': 'Using ndcg_at_10 metric to measure model performance on LEMBNeedleRetrieval and LEMBPasskeyRetrieval tasks.',
+                'highlight.title': 'Key Findings: Real Impact of Technology Stack Combinations on Performance',
+                'highlight.finding1': '⚠️ Major Discovery - GGUF Tech Stack vs HF+vLLM Tech Stack Performance Gap:',
+                'highlight.finding1.desc': 'GGUF format+Ollama shows significant performance degradation compared to HF format+vLLM combination in medium and long text scenarios',
+                'highlight.finding2': '2. GGUF Internal Quantization Technology Relatively Stable:',
+                'highlight.finding2.desc': 'Quantization operations within GGUF format have controllable impact',
+                'highlight.finding3': '3. Model Architecture Shows Significant Differential Performance:',
+                'highlight.finding3.desc': 'Different models show significant differences in performance gap between the two technology stacks',
+                'highlight.finding4': '4. Long Text Processing is Key Technology Stack Selection Factor:',
+                'highlight.finding4.desc': 'GGUF technology stack shows systematic disadvantage in long text retrieval scenarios',
+                'highlight.range.short': 'Short Text Impact:',
+                'highlight.range.medium': 'Medium Length Text Loss:',
+                'highlight.range.long': 'Long Text Critical Loss:',
+                'controls.title': '🔍 Quantization Performance Comparison Chart',
+                'controls.description': 'Select model to compare performance changes under different quantization precisions:',
+                'controls.model.label': 'Model Family:',
+                'controls.model.placeholder': 'Select model family',
+                'controls.range.label': 'Context Length Range:',
+                'controls.range.short': 'Short Text (256-512)',
+                'controls.range.medium': 'Medium Length Text (1K-4K)',
+                'controls.range.long': 'Long Text (8K-32K)',
+                'controls.show.button': 'Show Comparison Chart',
+                'controls.clear.button': 'Clear Chart',
+                'details.title': 'Quantization Performance Comparison Chart',
+                'chart.task.label': 'Task:',
+                'conclusion.title': '🎯 Technology Stack Performance Comparison: Critical Deployment Decision Guide',
+                'conclusion.breakthrough.title': '⚠️ Core Discovery: GGUF Tech Stack vs HF+vLLM Tech Stack Performance Gap',
+                'conclusion.breakthrough.description': 'Critical finding from comprehensive testing: <strong>GGUF+Ollama technology stack shows 50%-90% performance loss compared to HF+vLLM in long text scenarios</strong>, while quantization within GGUF format has controllable impact. The key decision is technology stack choice, not quantization level. This fundamentally changes deployment strategy priorities.',
+                'conclusion.differences.title': 'Technology Stack Performance vs Quantization: Impact Comparison Analysis',
+                'conclusion.differences.intro': 'Distinguishing between technology stack differences and quantization impact - the critical technical insights:',
+                'conclusion.differences.point1.title': 'Technology Stack Primary Impact (GGUF+Ollama vs HF+vLLM):',
+                'conclusion.differences.point1.desc': 'Long text 50%-90% loss, medium text varies by model (0.9%-61.2%), short text minimal impact or improvement',
+                'conclusion.differences.point2.title': 'GGUF Internal Quantization Secondary Impact (F16→Q8_0→Q4_K_M):',
+                'conclusion.differences.point2.desc': 'Within GGUF format, quantization impact controllable: Q8_0 minimal loss, Q4_K_M acceptable degradation in most cases',
+                'conclusion.differences.point3.title': 'Model Architecture Adaptability Ranking:',
+                'conclusion.differences.point3.desc': 'Technology stack adaptability: Qwen3-4B (medium text) > Qwen3-0.6B > Multilingual-E5-Large (long text vulnerable)',
+                'conclusion.effectiveness.title': 'Technology Stack Selection Decision Matrix',
+                'conclusion.effectiveness.intro': 'Based on real impact of technology stack differences and quantization technology, establish application scenario-oriented technology stack selection standards:',
+                'conclusion.effectiveness.point1.title': '🎯 Long Text Applications (8K-32K) - Mandatory HF Native:',
+                'conclusion.effectiveness.point1.desc': 'GGUF format has 50%-90% performance loss in long text scenarios, unacceptable. Must use HF+vLLM technology stack',
+                'conclusion.effectiveness.point2.title': '⚖️ Medium Text Applications (1K-4K) - Need Trade-off Choice:',
+                'conclusion.effectiveness.point2.desc': 'Qwen3 series has controllable loss in GGUF conversion (0.9%-3.3%), Multilingual-E5-Large has larger loss (61.2%). Suggest Qwen3 can use GGUF, E5-Large keep HF',
+                'conclusion.effectiveness.point3.title': '✅ Short Text Applications (256-512) - GGUF Friendly:',
+                'conclusion.effectiveness.point3.desc': 'All models have lossless or even improved GGUF conversion in short text scenarios, can confidently use GGUF+quantization technology stack',
+                'conclusion.effectiveness.point4.title': '🔧 GGUF Internal Quantization Strategy Optimization:',
+                'conclusion.effectiveness.point4.desc': 'In scenarios determined to use GGUF, F16→Q8_0→Q4_K_M quantization chain has controllable impact, can choose quantization level based on resource needs',
+                'conclusion.recommendation.title': 'Application Scenario-Based Deployment Decision Guide',
+                'conclusion.recommendation.stance': 'Technology stack choice is more critical than quantization level',
+                'conclusion.recommendation.intro': ':',
+                'conclusion.recommendation.point1.title': 'Long Text Retrieval Systems (RAG/Document Analysis):',
+                'conclusion.recommendation.point1.desc': 'Mandatory HF+vLLM, recommend Multilingual-E5-Large FP32 or Qwen3-4B BF16, ensure long text retrieval capability',
+                'conclusion.recommendation.point2.title': 'Mixed Length Applications (Search/Recommendation):',
+                'conclusion.recommendation.point2.desc': 'HF+vLLM priority, if resource constrained consider Qwen3 series+GGUF F16, avoid E5-Large to GGUF',
+                'conclusion.recommendation.point3.title': 'Short Text Intensive (Classification/Matching):',
+                'conclusion.recommendation.point3.desc': 'GGUF technology stack fully applicable, recommend BGE-M3 Q4_K_M or Qwen3-0.6B Q4_K_M, high cost-performance',
+                'conclusion.recommendation.point4.title': 'Extremely Resource Constrained (Edge Deployment):',
+                'conclusion.recommendation.point4.desc': 'Qwen3-0.6B + Q4_K_M + GGUF, achieve minimum resource usage with acceptable performance loss',
+                'conclusion.recommendation.point5.title': 'Performance Baseline Testing and Evaluation:',
+                'conclusion.recommendation.point5.desc': 'Before choosing GGUF solution, must conduct thorough testing within target text length ranges, particularly focusing on long text performance loss',
+                'conclusion.recommendation.suggestion.title': 'Critical Strategic Insight:',
+                'conclusion.recommendation.suggestion.desc': 'Technology stack performance gap (GGUF+Ollama vs HF+vLLM) far exceeds quantization impact. Long text applications must prioritize HF+vLLM over GGUF technology stack. The key decision is technology stack choice, not quantization level. For applications requiring long text capability, no amount of memory savings justifies 50%-90% performance loss.',
+                'model.fp16': 'FP16(GGUF_OLLAMA)',
+                'model.f16': 'F16(GGUF_OLLAMA)',
+                'model.f32': 'F32(GGUF_OLLAMA)',
+                'model.fp32_vllm': 'FP32(HF_vLLM)',
+                'model.bf16_vllm': 'BF16(HF_vLLM)',
+                'model.q8_0': 'Q8_0(GGUF_OLLAMA)',
+                'model.q4_k_m': 'Q4_K_M(GGUF_OLLAMA)',
+                'vs': 'vs',
+                'needle.task': 'Needle Task',
+                'passkey.task': 'Passkey Task',
+                'performance.better': 'Better',
+                'performance.worse': 'Worse', 
+                'performance.similar': 'Similar',
+                'quantization.impact': 'Quantization Impact',
+                'loading.text': 'Loading test results...',
+                'model.data.missing': 'Data Missing'
+            },
+            zh: {
+                'page.title': '向量模型量化性能对比测试结果',
+                'page.subtitle': '评估不同量化技术对向量嵌入模型性能的影响',
+                'dataset.title': '数据集与评估框架',
+                'dataset.source.label': '数据集来源：',
+                'dataset.source.desc': '基于',
+                'dataset.source.desc2': '数据集进行长文本向量嵌入性能评估',
+                'evaluation.script.label': '评估脚本：',
+                'evaluation.script.desc': '基于原始',
+                'evaluation.script.desc2': '框架进行调整，支持OpenAI兼容接口。',
+                'evaluation.script.link': '查看调整后的评估脚本',
+                'model.format.label': '模型格式：',
+                'model.format.desc': '包含原生HuggingFace格式(vLLM运行)和GGUF量化格式(ollama运行)两种类型，提供完整的模型性能基准对比',
+                'summary.title': '📊 量化性能对比汇总',
+                'summary.description': '本研究对比了多个主流向量嵌入模型在不同量化精度下的性能表现，涵盖BGE-M3、Qwen3-Embedding和Multilingual-E5-Large三大系列模型。',
+                'summary.metrics.label': '评估指标：',
+                'summary.metrics.description': '使用 ndcg_at_10 指标衡量模型性能，分别在 LEMBNeedleRetrieval 和 LEMBPasskeyRetrieval 任务上进行测试。',
+                'highlight.title': '关键发现：量化技术的实际影响',
+                'highlight.finding1': '1. Multilingual-E5-Large量化表现卓越：',
+                'highlight.finding1.desc': '从F32到Q4_K_M全量化级别都保持优异性能',
+                'highlight.finding2': '2. BGE-M3完整量化链路表现均衡：',
+                'highlight.finding2.desc': 'Q8_0作为中间量化级别展现出色稳定性',
+                'highlight.finding3': '3. Qwen3-0.6B量化策略精细化：',
+                'highlight.finding3.desc': '小模型在量化方面表现出意外的韧性',
+                'highlight.finding4': '4. 量化技术已实现生产级成熟度：',
+                'highlight.finding4.desc': '完整量化链路测试证实多级量化策略的可行性',
+                'highlight.range.short': '短文本:',
+                'highlight.range.medium': '中等长度文本:',
+                'highlight.range.long': '长文本:',
+                'controls.title': '🔍 量化性能对比图表',
+                'controls.description': '选择模型对比不同量化精度下的性能变化：',
+                'controls.model.label': '模型系列:',
+                'controls.model.placeholder': '选择模型系列',
+                'controls.range.label': '文本长度范围:',
+                'controls.range.short': '短文本 (256-512)',
+                'controls.range.medium': '中等长度文本 (1K-4K)',
+                'controls.range.long': '长文本 (8K-32K)',
+                'controls.show.button': '显示对比图表',
+                'controls.clear.button': '清空图表',
+                'details.title': '量化性能对比图表',
+                'chart.task.label': '任务:',
+                'conclusion.title': '🎯 技术栈性能对比：关键部署决策指南',
+                'conclusion.breakthrough.title': '⚠️ 核心发现：GGUF技术栈vs HF+vLLM技术栈性能差距',
+                'conclusion.breakthrough.description': '全面测试的关键发现：<strong>GGUF+Ollama技术栈相对于HF+vLLM在长文本场景下出现50%-90%性能损失</strong>，而GGUF格式内部的量化技术影响可控。关键决策是技术栈选择，而非量化级别。这从根本上改变了部署策略的优先级。',
+                'conclusion.differences.title': '技术栈性能vs量化技术：影响对比分析',
+                'conclusion.differences.intro': '区分技术栈差异与量化影响的关键技术洞察：',
+                'conclusion.differences.point1.title': '技术栈主要影响(GGUF+Ollama vs HF+vLLM)：',
+                'conclusion.differences.point1.desc': '长文本损失50%-90%，中等长度文本因模型而异(0.9%-61.2%)，短文本影响微小或提升',
+                'conclusion.differences.point2.title': 'GGUF内部量化次要影响(F16→Q8_0→Q4_K_M)：',
+                'conclusion.differences.point2.desc': 'GGUF格式内部，量化影响可控：Q8_0损失微小，Q4_K_M在多数情况下降级可接受',
+                'conclusion.differences.point3.title': '模型架构适应性排序：',
+                'conclusion.differences.point3.desc': '技术栈适应性：Qwen3-4B(中等长度文本) > Qwen3-0.6B > Multilingual-E5-Large(长文本脆弱)',
+                'conclusion.effectiveness.title': '技术栈选择决策矩阵',
+                'conclusion.effectiveness.intro': '基于技术栈差异与量化技术的真实影响，建立应用场景导向的技术栈选择标准：',
+                'conclusion.effectiveness.point1.title': '🎯 长文本应用（8K-32K）- 强制HF原生：',
+                'conclusion.effectiveness.point1.desc': 'GGUF格式在长文本场景下存在50%-90%性能损失，不可接受。必须使用HF+vLLM技术栈',
+                'conclusion.effectiveness.point2.title': '⚖️ 中等长度文本应用（1K-4K）- 需权衡选择：',
+                'conclusion.effectiveness.point2.desc': 'Qwen3系列在GGUF转换中损失可控(0.9%-3.3%)，Multilingual-E5-Large损失较大(61.2%)。建议Qwen3可用GGUF，E5-Large保持HF',
+                'conclusion.effectiveness.point3.title': '✅ 短文本应用（256-512）- GGUF友好：',
+                'conclusion.effectiveness.point3.desc': '所有模型在短文本场景下GGUF转换无损甚至提升，可放心使用GGUF+量化技术栈',
+                'conclusion.effectiveness.point4.title': '🔧 GGUF内部量化策略优化：',
+                'conclusion.effectiveness.point4.desc': '在确定使用GGUF的场景下，F16→Q8_0→Q4_K_M量化链路影响可控，可根据资源需求选择量化级别',
+                'conclusion.recommendation.title': '基于应用场景的部署决策指南',
+                'conclusion.recommendation.stance': '技术栈选择比量化级别更关键',
+                'conclusion.recommendation.intro': '：',
+                'conclusion.recommendation.point1.title': '长文本检索系统（RAG/文档分析）：',
+                'conclusion.recommendation.point1.desc': '强制HF+vLLM，推荐Multilingual-E5-Large FP32或Qwen3-4B BF16，确保长文本检索能力',
+                'conclusion.recommendation.point2.title': '混合长度应用（搜索/推荐）：',
+                'conclusion.recommendation.point2.desc': 'HF+vLLM优先，如资源受限可考虑Qwen3系列+GGUF F16，避免E5-Large转GGUF',
+                'conclusion.recommendation.point3.title': '短文本密集型（分类/匹配）：',
+                'conclusion.recommendation.point3.desc': 'GGUF技术栈完全适用，推荐BGE-M3 Q4_K_M或Qwen3-0.6B Q4_K_M，高性价比',
+                'conclusion.recommendation.point4.title': '资源极度受限（边缘部署）：',
+                'conclusion.recommendation.point4.desc': 'Qwen3-0.6B + Q4_K_M + GGUF，在可接受的性能损失下实现最小资源占用',
+                'conclusion.recommendation.point5.title': '性能基准测试与评估：',
+                'conclusion.recommendation.point5.desc': '在选择GGUF方案前，务必在目标文本长度范围内进行充分测试，特别关注长文本性能损失',
+                'conclusion.recommendation.suggestion.title': '关键战略洞察：',
+                'conclusion.recommendation.suggestion.desc': '技术栈性能差距(GGUF+Ollama vs HF+vLLM)的影响远超量化技术的影响。长文本应用必须优先选择HF+vLLM而非GGUF技术栈。关键决策是技术栈选择，而非量化级别。对于需要长文本能力的应用，任何显存节省都无法抵消50%-90%的性能损失。',
+                'model.fp16': 'FP16(GGUF_OLLAMA)',
+                'model.f16': 'F16(GGUF_OLLAMA)',
+                'model.f32': 'F32(GGUF_OLLAMA)',
+                'model.fp32_vllm': 'FP32(HF_vLLM)',
+                'model.bf16_vllm': 'BF16(HF_vLLM)',
+                'model.q8_0': 'Q8_0(GGUF_OLLAMA)',
+                'model.q4_k_m': 'Q4_K_M(GGUF_OLLAMA)',
+                'vs': '对比',
+                'needle.task': 'Needle任务',
+                'passkey.task': 'Passkey任务',
+                'performance.better': '更好',
+                'performance.worse': '更差',
+                'performance.similar': '相近',
+                'quantization.impact': '量化影响',
+                'loading.text': '正在加载测试结果...',
+                'model.data.missing': '数据缺失'
+            }
+        };
+
+        // Current language (default to Chinese)
+        let currentLanguage = 'zh';
+
+        // Language switching function
+        function switchLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            document.title = i18nData[lang]['page.title'];
+            
+            // Update language buttons
+            document.querySelectorAll('.language-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === (lang === 'en' ? 'EN' : '中文')) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Update all text elements with data-i18n attributes
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (i18nData[lang][key]) {
+                    element.innerHTML = i18nData[lang][key];
+                }
+            });
+            
+            // Reload model results to update dynamic content
+            if (Object.keys(modelData).length > 0) {
+                displayModelResults();
+            }
+        }
+
+        // Helper function to get translated text
+        function t(key) {
+            return i18nData[currentLanguage][key] || key;
+        }
+
+        // Model configurations for quantization comparison (ollama directory)
+        const modelConfigs = {
+            'multilingual-e5-large': {
+                name: 'Multilingual-E5-Large',
+                versions: {
+                    'FP32_vLLM': {
+                        dirName: 'intfloat_multilingual-e5-large',
+                        path: 'intfloat/multilingual-e5-large_None-0_openai_local',
+                        isVLLM: true,
+                        pooling: 'MEAN'
+                    },
+                    'F32': {
+                        dirName: 'jeffh_intfloat-multilingual-e5-large_f32',
+                        path: 'jeffh/intfloat-multilingual-e5-large:f32_None-0_openai_local'
+                    },
+                    'F16': {
+                        dirName: 'jeffh_intfloat-multilingual-e5-large_f16',
+                        path: 'jeffh/intfloat-multilingual-e5-large:f16_None-0_openai_local'
+                    },
+                    'Q8_0': {
+                        dirName: 'jeffh_intfloat-multilingual-e5-large_q8_0',
+                        path: 'jeffh/intfloat-multilingual-e5-large:q8_0_None-0_openai_local'
+                    },
+                    'Q4_K_M': {
+                        dirName: 'qllama_multilingual-e5-large_q4_k_m',
+                        path: 'qllama/multilingual-e5-large:q4_k_m_None-0_openai_local'
+                    }
+                }
+            },
+            'bge-m3': {
+                name: 'BGE-M3',
+                versions: {
+                    'FP16': {
+                        dirName: 'bge-m3_567m-fp16',
+                        path: 'bge-m3:567m-fp16_None-0_openai_local'
+                    },
+                    'Q8_0': {
+                        dirName: 'BAAI_bge-m3-GGUF_Q8_0',
+                        path: 'BAAI/bge-m3-GGUF:Q8_0_None-0_openai_local'
+                    },
+                    'Q4_K_M': {
+                        dirName: 'qllama_bge-m3_q4_k_m',
+                        path: 'qllama/bge-m3:q4_k_m_None-0_openai_local'
+                    }
+                }
+            },
+            'qwen3-0.6b': {
+                name: 'Qwen3-Embedding-0.6B',
+                versions: {
+                    'BF16_vLLM': {
+                        dirName: 'Qwen_Qwen3-Embedding-0.6B',
+                        path: 'Qwen/Qwen3-Embedding-0.6B_None-0_openai_local_pool_last',
+                        isVLLM: true,
+                        pooling: 'LAST'
+                    },
+                    'F16': {
+                        dirName: 'hf-mirror.com_Qwen_Qwen3-Embedding-0.6B-GGUF_F16',
+                        path: 'hf-mirror.com/Qwen/Qwen3-Embedding-0.6B-GGUF:F16_None-0_openai_local'
+                    },
+                    'Q8_0': {
+                        dirName: 'hf-mirror.com_Qwen_Qwen3-Embedding-0.6B-GGUF_Q8_0',
+                        path: 'hf-mirror.com/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0_None-0_openai_local'
+                    },
+                    'Q4_K_M': {
+                        dirName: 'hf-mirror.com_Qwen_Qwen3-Embedding-0.6B-GGUF_Q4_K_M',
+                        path: 'hf-mirror.com/Qwen/Qwen3-Embedding-0.6B-GGUF:Q4_K_M_None-0_openai_local'
+                    }
+                }
+            },
+            'qwen3-4b': {
+                name: 'Qwen3-Embedding-4B',
+                versions: {
+                    'BF16_vLLM': {
+                        dirName: 'Qwen_Qwen3-Embedding-4B',
+                        path: 'Qwen/Qwen3-Embedding-4B_None-0_openai_local_pool_last',
+                        isVLLM: true,
+                        pooling: 'LAST'
+                    },
+                    'F16': {
+                        dirName: 'hf-mirror.com_Qwen_Qwen3-Embedding-4B-GGUF_F16',
+                        path: 'hf-mirror.com/Qwen/Qwen3-Embedding-4B-GGUF:F16_None-0_openai_local'
+                    },
+                    'Q8_0': {
+                        dirName: 'Qwen_Qwen3-Embedding-4B_Q8_0',
+                        path: 'Qwen/Qwen3-Embedding-4B:Q8_0_None-0_openai_local'
+                    },
+                    'Q4_K_M': {
+                        dirName: 'hf-mirror.com_Qwen_Qwen3-Embedding-4B-GGUF_Q4_K_M',
+                        path: 'hf-mirror.com/Qwen/Qwen3-Embedding-4B-GGUF:Q4_K_M_None-0_openai_local'
+                    }
+                }
+            }
+        };
+
+        // Global variable to store loaded model data
+        let modelData = {};
+
+        // Calculate context range averages
+        function calculateContextRanges(data) {
+            const contexts = ['256', '512', '1024', '2048', '4096', '8192', '16384', '32768'];
+            
+            // 定义三个长度范围
+            const shortRange = ['256', '512'];  // 短文本
+            const mediumRange = ['1024', '2048', '4096'];  // 中等长度文本  
+            const longRange = ['8192', '16384', '32768'];  // 长文本
+            
+            function calculateRangeAvg(task, range) {
+                if (!data[task]) return 0;
+                const values = range.map(ctx => data[task][ctx] || 0).filter(v => v > 0);
+                return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+            }
+            
+            return {
+                short: {
+                    needle: calculateRangeAvg('LEMBNeedleRetrieval', shortRange),
+                    passkey: calculateRangeAvg('LEMBPasskeyRetrieval', shortRange),
+                    range: '256-512'
+                },
+                medium: {
+                    needle: calculateRangeAvg('LEMBNeedleRetrieval', mediumRange),
+                    passkey: calculateRangeAvg('LEMBPasskeyRetrieval', mediumRange),
+                    range: '1K-4K'
+                },
+                long: {
+                    needle: calculateRangeAvg('LEMBNeedleRetrieval', longRange),
+                    passkey: calculateRangeAvg('LEMBPasskeyRetrieval', longRange),
+                    range: '8K-32K'
+                }
+            };
+        }
+
+        // Load all model data from JSON files
+        async function loadAllModelData() {
+            const modelResultsDiv = document.getElementById('modelResults');
+            modelResultsDiv.innerHTML = '<div class="loading">' + t('loading.text') + '</div>';
+
+            // Load data for each model family
+            for (const [modelKey, config] of Object.entries(modelConfigs)) {
+                const loadedVersions = {};
+                
+                // Load data for each version of the model
+                for (const [versionKey, versionConfig] of Object.entries(config.versions)) {
+                    try {
+                        // Determine the base path based on whether it's a vLLM version
+                        let url;
+                        if (versionConfig.isVLLM) {
+                            // vLLM原生格式路径
+                            url = `results/vllm_original_length/${versionConfig.pooling}/${versionConfig.dirName}/${versionConfig.path}/overall_results.json`;
+                        } else {
+                            // GGUF量化格式路径（通过ollama运行）
+                            url = `results/ollama/${versionConfig.dirName}/${versionConfig.path}/overall_results.json`;
+                        }
+                        const response = await fetch(url);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            // 计算不同长度范围的平均值
+                            const contextRanges = calculateContextRanges(data);
+                            
+                            loadedVersions[versionKey] = {
+                                needle: data.LEMBNeedleRetrieval?.avg || 0,
+                                passkey: data.LEMBPasskeyRetrieval?.avg || 0,
+                                contextRanges: contextRanges,
+                                rawData: data
+                            };
+                        } else {
+                            console.warn(`Failed to load ${url}`);
+                            loadedVersions[versionKey] = {
+                                needle: 0,
+                                passkey: 0,
+                                rawData: null
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`Error loading data for ${modelKey} ${versionKey}:`, error);
+                        loadedVersions[versionKey] = {
+                            needle: 0,
+                            passkey: 0,
+                            rawData: null
+                        };
+                    }
+                }
+                
+                modelData[modelKey] = {
+                    name: config.name,
+                    versions: loadedVersions
+                };
+            }
+            
+            // After all data is loaded, display the results
+            displayModelResults();
+        }
+
+        // Display loaded model results
+        function displayModelResults() {
+            const modelResultsDiv = document.getElementById('modelResults');
+            modelResultsDiv.innerHTML = '';
+
+            for (const [modelKey, config] of Object.entries(modelData)) {
+                const modelCard = document.createElement('div');
+                modelCard.className = 'model-card';
+                
+                let cardHTML = `
+                    <div class="model-title">
+                        ${config.name}
+                    </div>
+                `;
+
+                const versionKeys = Object.keys(config.versions);
+                
+                // Create comparisons between consecutive versions
+                for (let i = 0; i < versionKeys.length - 1; i++) {
+                    const version1 = versionKeys[i];
+                    const version2 = versionKeys[i + 1];
+                    const data1 = config.versions[version1];
+                    const data2 = config.versions[version2];
+                    
+                    if (data1.rawData && data2.rawData && data1.contextRanges && data2.contextRanges) {
+                        cardHTML += `
+                            <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                                <h5 style="margin: 0 0 1rem 0;">${t('model.' + version1.toLowerCase())} ${t('vs')} ${t('model.' + version2.toLowerCase())}</h5>
+                        `;
+                        
+                        // 显示三个长度范围的对比
+                        const ranges = ['short', 'medium', 'long'];
+                        const rangeNames = {
+                            'short': currentLanguage === 'zh' ? '短文本 (256-512)' : 'Short Text (256-512)',
+                            'medium': currentLanguage === 'zh' ? '中等长度文本 (1K-4K)' : 'Medium Length Text (1K-4K)', 
+                            'long': currentLanguage === 'zh' ? '长文本 (8K-32K)' : 'Long Text (8K-32K)'
+                        };
+                        
+                        for (const range of ranges) {
+                            const range1 = data1.contextRanges[range];
+                            const range2 = data2.contextRanges[range];
+                            
+                            if (range1 && range2) {
+                                // Calculate changes for this range
+                                const needleChange = range1.needle > 0 ? ((range2.needle - range1.needle) / range1.needle * 100) : 0;
+                                const passkeyChange = range1.passkey > 0 ? ((range2.passkey - range1.passkey) / range1.passkey * 100) : 0;
+                                
+                                const needleClass = Math.abs(needleChange) < 1 ? 'similar' : needleChange > 0 ? 'better' : 'worse';
+                                const passkeyClass = Math.abs(passkeyChange) < 1 ? 'similar' : passkeyChange > 0 ? 'better' : 'worse';
+                                
+                                cardHTML += `
+                                    <div style="margin: 0.5rem 0; padding: 0.5rem; background: white; border-radius: 6px; border-left: 3px solid #667eea;">
+                                        <div style="font-weight: bold; margin-bottom: 0.3rem; color: #667eea;">${rangeNames[range]}</div>
+                                        
+                                        <div class="comparison-result ${needleClass}" style="margin: 0.2rem 0; padding: 0.3rem; font-size: 0.9rem;">
+                                            <span>${t('needle.task')}</span>
+                                            <span class="score">
+                                                ${range1.needle.toFixed(3)} → ${range2.needle.toFixed(3)} 
+                                                (${needleChange > 0 ? '+' : ''}${needleChange.toFixed(1)}%)
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="comparison-result ${passkeyClass}" style="margin: 0.2rem 0; padding: 0.3rem; font-size: 0.9rem;">
+                                            <span>${t('passkey.task')}</span>
+                                            <span class="score">
+                                                ${range1.passkey.toFixed(3)} → ${range2.passkey.toFixed(3)} 
+                                                (${passkeyChange > 0 ? '+' : ''}${passkeyChange.toFixed(1)}%)
+                                            </span>
+                                        </div>
+                                        
+                                        <div style="text-align: center; margin-top: 0.2rem;">
+                                            <span class="performance-impact ${getImpactClass(needleChange, passkeyChange)}" style="font-size: 0.8rem;">
+                                                ${getImpactText(needleChange, passkeyChange)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+                        
+                        cardHTML += `</div>`;
+                    } else {
+                        cardHTML += `
+                            <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                                <h5 style="margin: 0 0 0.5rem 0;">${t('model.' + version1.toLowerCase())} ${t('vs')} ${t('model.' + version2.toLowerCase())}</h5>
+                                <div class="comparison-result" style="background-color: #f8d7da; border: 1px solid #f5c6cb;">
+                                    <span>${t('model.data.missing')}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                modelCard.innerHTML = cardHTML;
+                modelResultsDiv.appendChild(modelCard);
+            }
+        }
+
+        function getImpactClass(needleChange, passkeyChange) {
+            // 特别处理完全无变化的情况（0.0%）
+            if (Math.abs(needleChange) < 0.1 && Math.abs(passkeyChange) < 0.1) {
+                return 'impact-none';
+            }
+            
+            // 考虑最大的负面影响，如果有任何一个任务严重下降就标记为相应级别
+            const maxNegativeChange = Math.max(
+                needleChange < 0 ? Math.abs(needleChange) : 0,
+                passkeyChange < 0 ? Math.abs(passkeyChange) : 0
+            );
+            
+            // 如果没有负面影响，则看整体变化幅度
+            if (maxNegativeChange === 0) {
+                const avgChange = Math.abs((needleChange + passkeyChange) / 2);
+                if (avgChange < 2) return 'impact-minimal';
+                return 'impact-moderate';  // 即使是正向变化，幅度大也要标注
+            }
+            
+            // 有负面影响时，按最大负面影响分级
+            if (maxNegativeChange < 2) return 'impact-minimal';
+            if (maxNegativeChange < 8) return 'impact-moderate';
+            if (maxNegativeChange < 15) return 'impact-significant';
+            return 'impact-severe';
+        }
+
+        function getImpactText(needleChange, passkeyChange) {
+            const maxNegativeChange = Math.max(
+                needleChange < 0 ? Math.abs(needleChange) : 0,
+                passkeyChange < 0 ? Math.abs(passkeyChange) : 0
+            );
+            
+            // 特别处理完全无变化的情况（0.0%）
+            if (Math.abs(needleChange) < 0.1 && Math.abs(passkeyChange) < 0.1) {
+                return currentLanguage === 'zh' ? '无影响' : 'No Impact';
+            }
+            
+            if (maxNegativeChange === 0) {
+                const avgChange = Math.abs((needleChange + passkeyChange) / 2);
+                if (avgChange < 2) return currentLanguage === 'zh' ? '微小' : 'Minimal';
+                return currentLanguage === 'zh' ? '轻微' : 'Light';
+            }
+            
+            if (maxNegativeChange < 2) return currentLanguage === 'zh' ? '微小' : 'Minimal';
+            if (maxNegativeChange < 8) return currentLanguage === 'zh' ? '轻微' : 'Light';
+            if (maxNegativeChange < 15) return currentLanguage === 'zh' ? '中等' : 'Moderate';
+            return currentLanguage === 'zh' ? '显著' : 'Significant';
+        }
+
+        // Chart instance
+        let performanceChart = null;
+        
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Model Quantization Performance Comparison'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Model Versions'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'ndcg_at_10 Score'
+                            },
+                            min: 0,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        // Show comparison chart
+        function showComparison() {
+            const modelKey = document.getElementById('modelSelect').value;
+            const task = document.getElementById('taskSelect').value;
+            const contextRange = document.getElementById('contextRangeSelect').value;
+            
+            if (!modelKey) {
+                alert(currentLanguage === 'zh' ? '请选择模型系列' : 'Please select a model family');
+                return;
+            }
+            
+            if (!modelData[modelKey]) {
+                alert(currentLanguage === 'zh' ? '模型数据未加载' : 'Model data not loaded');
+                return;
+            }
+            
+            const config = modelData[modelKey];
+            const labels = Object.keys(config.versions);
+            
+            // 获取指定长度范围的数据
+            const data = labels.map(label => {
+                const versionData = config.versions[label];
+                if (versionData.contextRanges && versionData.contextRanges[contextRange]) {
+                    const rangeData = versionData.contextRanges[contextRange];
+                    return task === 'LEMBNeedleRetrieval' ? rangeData.needle : rangeData.passkey;
+                }
+                return 0;
+            });
+            
+            // Generate colors
+            const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b'];
+            
+            const rangeNames = {
+                'short': currentLanguage === 'zh' ? '短文本 (256-512)' : 'Short Text (256-512)',
+                'medium': currentLanguage === 'zh' ? '中等长度文本 (1K-4K)' : 'Medium Length Text (1K-4K)', 
+                'long': currentLanguage === 'zh' ? '长文本 (8K-32K)' : 'Long Text (8K-32K)'
+            };
+            
+            performanceChart.data.labels = labels;
+            performanceChart.data.datasets = [{
+                label: `${config.name} - ${task} (${rangeNames[contextRange]})`,
+                data: data,
+                backgroundColor: colors.slice(0, labels.length),
+                borderColor: colors.slice(0, labels.length),
+                borderWidth: 2
+            }];
+            
+            performanceChart.options.plugins.title.text = `${config.name} ${currentLanguage === 'zh' ? '量化性能对比' : 'Quantization Performance Comparison'} - ${rangeNames[contextRange]}`;
+            performanceChart.update();
+            
+            // Update legend
+            updateChartLegend(config.name, labels, data, rangeNames[contextRange]);
+        }
+        
+        // Clear chart
+        function clearChart() {
+            if (performanceChart) {
+                performanceChart.data.datasets = [];
+                performanceChart.data.labels = [];
+                performanceChart.update();
+            }
+            updateChartLegend();
+        }
+        
+        // Update chart legend
+        function updateChartLegend(modelName = null, labels = [], data = [], contextRange = '') {
+            const legendDiv = document.getElementById('chartLegend');
+            if (!modelName) {
+                legendDiv.innerHTML = `<em>${currentLanguage === 'zh' ? '选择模型查看对比结果' : 'Select model to view comparison results'}</em>`;
+            } else {
+                const legendItems = labels.map((label, index) => {
+                    return `<span style="color: #667eea; font-weight: bold;">●</span> ${label}: ${data[index].toFixed(3)}`;
+                }).join(' | ');
+                const rangeText = contextRange ? ` - ${contextRange}` : '';
+                legendDiv.innerHTML = `<strong>${currentLanguage === 'zh' ? '当前显示:' : 'Currently showing:'}</strong> ${modelName}${rangeText} | ${legendItems}`;
+            }
+        }
+
+        // Page load initialization
+        window.addEventListener('load', function() {
+            // Initialize with Chinese language
+            switchLanguage('zh');
+            // Initialize chart
+            initChart();
+            // Initialize chart legend
+            updateChartLegend();
+            // Load model data from JSON files
+            loadAllModelData();
+        });
+    </script>
+</body>
+</html> 
