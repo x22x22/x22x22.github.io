@@ -379,18 +379,18 @@
                 'conclusion.breakthrough.title': '🌟 Notable Achievement: Ultra-Long Text Processing Capability Validation',
                 'conclusion.breakthrough.description': 'achieved <strong>excellent ultra-long text processing performance</strong> under LAST pooling: At extreme lengths of 34816 and 36864 tokens (exceeding the native 32k limit by 15%+), the PasskeyRetrieval task still maintains a <strong>near-perfect score of</strong>',
                 'conclusion.breakthrough.suffix': ', providing strong performance validation for vLLM\'s chunked processing technology!',
-                'conclusion.differences.title': 'Analysis of Aggregation Strategy Performance',
-                'conclusion.differences.intro': 'Contrary to the assumption that "mean aggregation always performs better", our comprehensive test results reveal:',
+                'conclusion.differences.title': 'Analysis of Pooling Strategy Performance in Chunked Processing',
+                'conclusion.differences.intro': 'Contrary to the assumption that "mean pooling always performs better in chunked processing", our comprehensive test results reveal:',
                 'conclusion.differences.point1.title': 'Native pooling types generally perform best:',
                 'conclusion.differences.point1.desc': '4 out of 5 models achieved highest scores with their native pooling types',
-                'conclusion.differences.point2.title': 'MEAN aggregation is not a universal solution:',
-                'conclusion.differences.point2.desc': 'For native LAST models, LAST aggregation significantly outperforms MEAN aggregation',
+                'conclusion.differences.point2.title': 'MEAN pooling is not a universal solution for chunked processing:',
+                'conclusion.differences.point2.desc': 'For native LAST models, using LAST pooling strategy significantly outperforms MEAN pooling strategy',
                 'conclusion.differences.point3.title': 'Interesting exception:',
-                'conclusion.differences.point3.desc': 'Although ibm-granite model is natively CLS, MEAN aggregation performs best',
+                'conclusion.differences.point3.desc': 'Although ibm-granite model is natively CLS, MEAN pooling strategy performs best in chunked processing',
                 'conclusion.effectiveness.title': 'Practical Effects of Chunked Processing',
                 'conclusion.effectiveness.intro': 'Ultra-long text testing of Qwen models (34816, 36864 tokens) proves the effectiveness of chunked processing:',
                 'conclusion.effectiveness.point1.title': '🌟 Qwen3-Embedding-4B shows outstanding performance:',
-                'conclusion.effectiveness.point1.desc': 'Under LAST aggregation, even exceeding the native 32k context limit, PasskeyRetrieval task still maintains a high score of',
+                'conclusion.effectiveness.point1.desc': 'Under LAST pooling strategy in chunked processing, even exceeding the native 32k context limit, PasskeyRetrieval task still maintains a high score of',
                 'conclusion.effectiveness.point1.suffix': '',
                 'conclusion.effectiveness.point2.title': 'Technical validation:',
                 'conclusion.effectiveness.point2.desc': 'This is the first proof that chunked processing technology can maintain near-native performance on ultra-long texts',
@@ -400,15 +400,15 @@
                 'conclusion.recommendation.stance': 'Based on these test results, maintaining the current flexible implementation approach is recommended',
                 'conclusion.recommendation.intro': ', for the following reasons:',
                 'conclusion.recommendation.point1.title': 'Significant performance differences:',
-                'conclusion.recommendation.point1.desc': 'Performance differences between aggregation methods are substantial; forcing MEAN usage would severely damage some models\' performance',
+                'conclusion.recommendation.point1.desc': 'Performance differences between pooling strategies in chunked processing are substantial; forcing MEAN usage would severely damage some models\' performance',
                 'conclusion.recommendation.point2.title': 'Model diversity:',
                 'conclusion.recommendation.point2.desc': 'Real applications encounter various native pooling types, requiring flexibility',
                 'conclusion.recommendation.point3.title': 'User choice:',
-                'conclusion.recommendation.point3.desc': 'Users should be allowed to choose the aggregation method most suitable for their models',
+                'conclusion.recommendation.point3.desc': 'Users should be allowed to choose the pooling strategy most suitable for their models in chunked processing',
                 'conclusion.recommendation.suggestion.title': 'Recommended approach:',
-                'conclusion.recommendation.suggestion.desc': 'Maintain the current implementation that allows users to select aggregation strategies through configuration. Documentation should clearly indicate that for optimal performance, users should choose aggregation methods consistent with their model\'s native pooling type. This approach provides necessary flexibility while enabling optimal results across diverse model architectures.',
+                'conclusion.recommendation.suggestion.desc': 'Maintain the current implementation that allows users to select pooling strategies for chunked processing through configuration. Documentation should clearly indicate that for optimal performance, users should choose pooling strategies consistent with their model\'s native pooling type. This approach provides necessary flexibility while enabling optimal results across diverse model architectures.',
                 'model.native': 'native',
-                'model.aggregation': ' aggregation',
+                'model.pooling': ' pooling',
                 'model.data.missing': 'Data Missing',
                 'model.excellent.long': '⚡Excellent Long Text',
                 'details.select.complete': 'Please select model and pooling type',
@@ -444,18 +444,18 @@
                 'conclusion.breakthrough.title': '🌟 显著成果：超长文本处理能力验证',
                 'conclusion.breakthrough.description': '在LAST pooling下实现了<strong>优异的超长文本处理性能</strong>：在34816和36864 tokens（超出32k原生限制15%+）的极端长度下，PasskeyRetrieval任务仍维持<strong>',
                 'conclusion.breakthrough.suffix': '的近完美分数</strong>，这为vLLM的分片处理技术提供了强有力的性能验证！',
-                'conclusion.differences.title': '聚合策略性能分析',
-                'conclusion.differences.intro': '与"mean aggregation always performs better"的假设相反，我们的全面测试结果表明：',
+                'conclusion.differences.title': '分片处理中池化策略性能分析',
+                'conclusion.differences.intro': '与"分片处理中mean pooling总是表现更好"的假设相反，我们的全面测试结果表明：',
                 'conclusion.differences.point1.title': '原生pooling类型普遍表现最佳：',
                 'conclusion.differences.point1.desc': '5个模型中有4个在原生pooling类型下获得最高分数',
-                'conclusion.differences.point2.title': 'MEAN聚合并非万能解决方案：',
-                'conclusion.differences.point2.desc': '对于原生LAST模型，LAST聚合显著优于MEAN聚合',
+                'conclusion.differences.point2.title': 'MEAN pooling并非分片处理的万能解决方案：',
+                'conclusion.differences.point2.desc': '对于原生LAST模型，使用LAST pooling策略显著优于MEAN pooling策略',
                 'conclusion.differences.point3.title': '有趣的例外：',
-                'conclusion.differences.point3.desc': 'ibm-granite模型虽然原生是CLS，但MEAN聚合表现最好',
+                'conclusion.differences.point3.desc': 'ibm-granite模型虽然原生是CLS，但在分片处理中MEAN pooling策略表现最好',
                 'conclusion.effectiveness.title': '分片处理的实际效果',
                 'conclusion.effectiveness.intro': 'Qwen模型的超长文本测试（34816、36864 tokens）证明了分片处理的有效性：',
                 'conclusion.effectiveness.point1.title': '🌟 Qwen3-Embedding-4B表现突出：',
-                'conclusion.effectiveness.point1.desc': '在LAST聚合下，即使超出原生32k上下文限制，PasskeyRetrieval任务仍保持',
+                'conclusion.effectiveness.point1.desc': '在分片处理的LAST pooling策略下，即使超出原生32k上下文限制，PasskeyRetrieval任务仍保持',
                 'conclusion.effectiveness.point1.suffix': '的高分',
                 'conclusion.effectiveness.point2.title': '技术验证：',
                 'conclusion.effectiveness.point2.desc': '这是首次证明分片处理技术能在超长文本上维持接近原生性能',
@@ -465,15 +465,15 @@
                 'conclusion.recommendation.stance': '基于测试结果，建议保持当前灵活的实现方式',
                 'conclusion.recommendation.intro': '，原因如下：',
                 'conclusion.recommendation.point1.title': '性能差异显著：',
-                'conclusion.recommendation.point1.desc': '不同聚合方式的性能差异很大，强制使用MEAN会严重损害某些模型的性能',
+                'conclusion.recommendation.point1.desc': '分片处理中不同pooling策略的性能差异很大，强制使用MEAN会严重损害某些模型的性能',
                 'conclusion.recommendation.point2.title': '模型多样性：',
                 'conclusion.recommendation.point2.desc': '实际应用中会遇到各种原生pooling类型的模型，需要保持灵活性',
                 'conclusion.recommendation.point3.title': '用户选择权：',
-                'conclusion.recommendation.point3.desc': '应该让用户选择最适合其模型的聚合方式',
+                'conclusion.recommendation.point3.desc': '应该让用户选择最适合其模型的分片处理pooling策略',
                 'conclusion.recommendation.suggestion.title': '建议方案：',
-                'conclusion.recommendation.suggestion.desc': '保持当前允许用户通过配置选择聚合策略的实现方式。文档应明确说明，为获得最佳性能，用户应选择与其模型原生pooling类型一致的聚合方式。这种方法在提供必要灵活性的同时，能够在多样化的模型架构上实现最优结果。',
+                'conclusion.recommendation.suggestion.desc': '保持当前允许用户通过配置选择分片处理pooling策略的实现方式。文档应明确说明，为获得最佳性能，用户应选择与其模型原生pooling类型一致的pooling策略。这种方法在提供必要灵活性的同时，能够在多样化的模型架构上实现最优结果。',
                 'model.native': '原生',
-                'model.aggregation': '聚合',
+                'model.pooling': 'pooling',
                 'model.data.missing': '数据缺失',
                 'model.excellent.long': '⚡超长文本优异',
                 'details.select.complete': '请选择模型和Pooling类型',
@@ -662,7 +662,7 @@
                             <div class="pooling-result ${isBest ? 'best' : 'normal'}">
                                 <span>
                                     ${isBest ? '🏆 ' : ''}
-                                    <strong>${pooling}${t('model.aggregation')}${isNative ? ` (${t('model.native')})` : ''}</strong>${specialNote}
+                                    <strong>${pooling}${t('model.pooling')}${isNative ? ` (${t('model.native')})` : ''}</strong>${specialNote}
                                 </span>
                                 <span class="score">${needleScore}/${passkeyScore}</span>
                             </div>
@@ -670,7 +670,7 @@
                     } else {
                         cardHTML += `
                             <div class="pooling-result normal">
-                                <span><strong>${pooling}${t('model.aggregation')}${isNative ? ` (${t('model.native')})` : ''}</strong></span>
+                                <span><strong>${pooling}${t('model.pooling')}${isNative ? ` (${t('model.native')})` : ''}</strong></span>
                                 <span class="score" style="color: #999;">${t('model.data.missing')}</span>
                             </div>
                         `;
